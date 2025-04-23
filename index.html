@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trading Card Library</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1 class="page-title">Welcome to the Trading Card Library</h1>
+  <a class="main-button" href="view-cards.php">📄 View All Cards</a>
+  <a class="main-button" href="add-card.php">➕ Add New Card</a>
+
+  <div id="bg-message"></div>
+
+  <!-- Floating Background Widget -->
+  <div class="background-toggle">
+    <button id="bg-toggle" class="toggle-button">⚙️</button>
+    <div id="bg-controls" class="background-widget collapsed">
+      <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="background_image" id="background_image" accept="image/*" hidden>
+        <label for="background_image" class="bg-widget-button">📤 Upload</label>
+      </form>
+  
+      <form id="removeForm">
+        <button type="submit" class="bg-widget-button danger">🗑️ Remove</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const uploadForm = document.getElementById('uploadForm');
+    const removeForm = document.getElementById('removeForm');
+    const messageBox = document.getElementById('bg-message');
+
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(uploadForm);
+      const res = await fetch('upload-background.php', {
+        method: 'POST',
+        body: formData
+      });
+      const text = await res.text();
+      messageBox.textContent = text;
+
+      if (text.includes("✅")) {
+        setTimeout(() => {
+          const timestamp = new Date().getTime();
+          document.body.style.backgroundImage = `url('uploads/background.jpg?cache=${timestamp}')`;
+        }, 100);
+      }
+    });
+
+    removeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const res = await fetch('remove-background.php', { method: 'POST' });
+      const text = await res.text();
+      messageBox.textContent = text;
+
+      if (text.includes("✅")) {
+        document.body.style.backgroundImage = 'none';
+        document.body.style.backgroundColor = '#1e1e1e';
+        document.body.offsetHeight;
+      }
+    });
+
+    async function checkBackgroundImage() {
+      const res = await fetch('uploads/background.jpg', { method: 'HEAD' });
+      if (res.ok) {
+        const timestamp = new Date().getTime();
+        document.body.style.backgroundImage = `url('uploads/background.jpg?cache=${timestamp}')`;
+      } else {
+        document.body.style.backgroundImage = 'none';
+        document.body.style.backgroundColor = '#1e1e1e';
+      }
+    }
+
+    checkBackgroundImage();
+
+    const toggleBtn = document.getElementById('bg-toggle');
+const bgControls = document.getElementById('bg-controls');
+
+toggleBtn.addEventListener('click', () => {
+  bgControls.classList.toggle('collapsed');
+});
+const bgInput = document.getElementById('background_image');
+
+bgInput.addEventListener('change', () => {
+  const fileName = bgInput.files[0]?.name;
+  if (fileName) {
+    const confirmUpload = confirm(`Upload "${fileName}" as your background?`);
+    if (confirmUpload) {
+      uploadForm.requestSubmit(); // triggers submit if confirmed
+    } else {
+      bgInput.value = ""; // clear the file input
+    }
+  }
+});
+
+  </script>
+</body>
+</html>
