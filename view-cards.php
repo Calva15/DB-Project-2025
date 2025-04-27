@@ -30,11 +30,8 @@ $result = $conn->query($sql);
 <body>
 <script>
   window.addEventListener('load', async () => {
-    console.log("Checking for background image...");
-
     try {
       const res = await fetch('uploads/background.jpg', { method: 'HEAD' });
-
       if (res.ok) {
         const timestamp = new Date().getTime();
         const bgUrl = `url('uploads/background.jpg?cache=${timestamp}')`;
@@ -43,62 +40,82 @@ $result = $conn->query($sql);
         document.body.style.backgroundPosition = "center";
         document.body.style.backgroundRepeat = "no-repeat";
         document.body.style.backgroundAttachment = "fixed";
-        console.log("✅ Background applied:", bgUrl);
       } else {
-        console.log("⚠️ Background image not found. Using fallback.");
         document.body.style.background = "#1e1e1e";
       }
     } catch (err) {
-      console.error("❌ Error checking background image:", err);
+      document.body.style.background = "#1e1e1e";
     }
   });
 </script>
 
+<h1 class="page-title">All Trading Cards</h1>
 
-  <h1 class="page-title">All Trading Cards</h1>
-  <a class="back" href="index.html">← Back to Home</a>
+<button id="updatePricesBtn" class="main-button" style="width: auto; margin-bottom: 20px;">
+  🔄 Update Prices
+</button>
+<div id="update-status" style="text-align:center; margin-bottom: 20px; font-weight: bold;"></div>
 
-  <?php if ($result->num_rows > 0): ?>
-    <table>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Rarity</th>
-        <th>Set</th>
-        <th>Description</th>
-        <th>Price (USD)</th>
-        <th>Source</th>
-        <th>Checked On</th>
-        <th>Image</th>
-        <th>Actions</th>
-      </tr>
-      <?php while ($row = $result->fetch_assoc()): ?>
-      <tr>
-        <td><?= htmlspecialchars($row['name']) ?></td>
-        <td><?= htmlspecialchars($row['type_name']) ?></td>
-        <td><?= htmlspecialchars($row['rarity']) ?></td>
-        <td><?= htmlspecialchars($row['set_name']) ?></td>
-        <td><?= htmlspecialchars($row['description']) ?></td>
-        <td><?= $row['price'] !== null ? '$' . number_format($row['price'], 2) : 'N/A' ?></td>
-        <td><?= htmlspecialchars($row['source']) ?></td>
-        <td><?= htmlspecialchars($row['date_checked']) ?></td>
-        <td>
-          <?php if (!empty($row['image_url'])): ?>
-            <img src="<?= htmlspecialchars($row['image_url']) ?>" alt="Card Image" class="zoom-image">
-          <?php else: ?>
-            <span style="color: #aaa;">No image</span>
-          <?php endif; ?>
-        </td>
-        <td>
-          <a href="edit-card.php?id=<?= $row['id'] ?>">✏️ Edit</a> |
-          <a href="delete-card.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this card?');">🗑️ Delete</a>
-        </td>
-      </tr>
-      <?php endwhile; ?>
-    </table>
-  <?php else: ?>
-    <p style="text-align: center;">No cards found.</p>
-  <?php endif; ?>
+<a class="back" href="index.html">← Back to Home</a>
 
+<?php if ($result->num_rows > 0): ?>
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Rarity</th>
+      <th>Set</th>
+      <th>Description</th>
+      <th>Price (USD)</th>
+      <th>Source</th>
+      <th>Checked On</th>
+      <th>Image</th>
+      <th>Actions</th>
+    </tr>
+    <?php while ($row = $result->fetch_assoc()): ?>
+    <tr>
+      <td><?= htmlspecialchars($row['name']) ?></td>
+      <td><?= htmlspecialchars($row['type_name']) ?></td>
+      <td><?= htmlspecialchars($row['rarity']) ?></td>
+      <td><?= htmlspecialchars($row['set_name']) ?></td>
+      <td><?= htmlspecialchars($row['description']) ?></td>
+      <td><?= $row['price'] !== null ? '$' . number_format($row['price'], 2) : 'N/A' ?></td>
+      <td><?= htmlspecialchars($row['source']) ?></td>
+      <td><?= htmlspecialchars($row['date_checked']) ?></td>
+      <td>
+        <?php if (!empty($row['image_url'])): ?>
+          <img src="<?= htmlspecialchars($row['image_url']) ?>" alt="Card Image" class="zoom-image">
+        <?php else: ?>
+          <span style="color: #aaa;">No image</span>
+        <?php endif; ?>
+      </td>
+      <td>
+        <a href="edit-card.php?id=<?= $row['id'] ?>">✏️ Edit</a> |
+        <a href="delete-card.php?id=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this card?');">🗑️ Delete</a>
+      </td>
+    </tr>
+    <?php endwhile; ?>
+  </table>
+<?php else: ?>
+  <p style="text-align: center;">No cards found.</p>
+<?php endif; ?>
+
+<script>
+  document.getElementById('updatePricesBtn').addEventListener('click', async () => {
+    if (!confirm("Are you sure you want to update all prices?")) return;
+
+    const status = document.getElementById('update-status');
+    status.textContent = "⏳ Updating prices...";
+
+    try {
+      const res = await fetch('update-prices.php', { method: 'POST' });
+      const text = await res.text();
+      status.textContent = text;
+    } catch (err) {
+      console.error(err);
+      status.textContent = "❌ Failed to update prices.";
+    }
+  });
+</script>
 </body>
 </html>

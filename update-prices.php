@@ -24,7 +24,7 @@ function getPriceFromPriceCharting($url) {
 function getPriceFromTCGPlayer($url) {
     $html = @file_get_contents($url);
     if (!$html) return null;
-    if (preg_match('/Market Price.*?\\$(\d+\.\d+)/', $html, $matches)) {
+    if (preg_match('/Market Price.*?\$(\d+\.\d+)/', $html, $matches)) {
         return floatval($matches[1]);
     }
     return null;
@@ -34,7 +34,7 @@ function getPriceFromTCGPlayer($url) {
 function getPriceFromTrollAndToad($url) {
     $html = @file_get_contents($url);
     if (!$html) return null;
-    if (preg_match('/Our Price.*?\\$(\d+\.\d+)/', $html, $matches)) {
+    if (preg_match('/Our Price.*?\$(\d+\.\d+)/', $html, $matches)) {
         return floatval($matches[1]);
     }
     return null;
@@ -66,21 +66,22 @@ while ($card = $result->fetch_assoc()) {
     } elseif (strpos($url, 'trollandtoad.com') !== false) {
         $price = getPriceFromTrollAndToad($url);
         $source = 'Troll and Toad';
-    } else {
-        continue; // Skip unsupported sources
     }
 
     if ($price !== null) {
-        $check = $conn->prepare("SELECT id FROM market_prices WHERE card_id = ? AND date_checked = ?");
-        $check->bind_param("is", $cardId, $today);
+        // Check if a price entry already exists
+        $check = $conn->prepare("SELECT id FROM market_prices WHERE card_id = ?");
+        $check->bind_param("i", $cardId);
         $check->execute();
-        $exists = $check->get_result()->num_rows > 0;
+        $exists = $check->get_result()->fetch_assoc();
         $check->close();
 
         if ($exists) {
-            $stmt = $conn->prepare("UPDATE market_prices SET price = ?, source = ?, date_checked = ? WHERE card_id = ? AND date_checked = ?");
-            $stmt->bind_param("dssis", $price, $source, $today, $cardId, $today);
+            // Update existing entry
+            $stmt = $conn->prepare("UPDATE market_prices SET price=?, source=?, date_checked=? WHERE card_id=?");
+            $stmt->bind_param("dssi", $price, $source, $today, $cardId);
         } else {
+            // Insert new entry
             $stmt = $conn->prepare("INSERT INTO market_prices (card_id, price, source, date_checked) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("idss", $cardId, $price, $source, $today);
         }
@@ -93,8 +94,8 @@ while ($card = $result->fetch_assoc()) {
     }
 }
 
-echo "✅ Price updates complete:\n";
-foreach ($updated as $site => $count) {
-    echo "- $site: $count card(s) updated\n";
+echo "✅ Prices updated:\n";
+foreach ($updated as $src => $count) {
+    echo "$src: $count\n";
 }
 ?>

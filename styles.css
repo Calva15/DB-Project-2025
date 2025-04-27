@@ -218,3 +218,6 @@ body::after {
   z-index: 10;
   position: relative;
 }
+.main-button {
+  margin-bottom: 20px;
+}
